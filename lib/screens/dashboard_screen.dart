@@ -10,6 +10,7 @@ import '../widgets/stat_card.dart';
 import '../widgets/task_card.dart';
 import 'activity_screen.dart';
 import 'attention_screen.dart';
+import 'task_details_screen.dart';
 import 'workload_screen.dart';
 
 /// OWNER: Member D. Greeting, four SLA counters, status bar,
@@ -118,8 +119,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: TaskCard(
                   task: t,
                   assignee: _members[t.assigneeId],
-                  onTap: () {
-                    // TODO(D): open Task Details for this task
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => TaskDetailsScreen(task: t)),
+                    );
+                    _load(); // refresh counters after coming back
                   },
                 ),
               ),
