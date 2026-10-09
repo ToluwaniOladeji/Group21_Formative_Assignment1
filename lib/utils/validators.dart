@@ -1,3 +1,5 @@
+import '../models/task.dart';
+
 /// All form validation lives here so it is easy to find and explain in the demo.
 /// Each returns null when valid, or an error message (Flutter's FormField convention).
 class Validators {
@@ -10,7 +12,9 @@ class Validators {
   }
 
   static String? description(String? v) {
-    if ((v?.trim().length ?? 0) > 300) return 'Description is limited to 300 characters.';
+    if ((v?.trim().length ?? 0) > 300) {
+      return 'Description is limited to 300 characters.';
+    }
     return null;
   }
 
@@ -24,18 +28,31 @@ class Validators {
   static String? email(String? v) {
     final s = v?.trim() ?? '';
     if (s.isEmpty) return 'Enter an email address.';
-    if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(s)) return 'Enter a valid email, like name@team.com.';
+    if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(s)) {
+      return 'Enter a valid email, like name@team.com.';
+    }
     return null;
   }
 
-  static String? required(Object? v, String what) => v == null ? 'Choose $what.' : null;
+  static String? required(Object? v, String what) =>
+      v == null ? 'Choose $what.' : null;
 
   /// New tasks cannot start with a deadline that has already passed.
   static String? dueDate(DateTime? v, {bool isNew = true}) {
     if (v == null) return 'Pick a due date.';
-    final today = DateTime.now();
-    final startOfToday = DateTime(today.year, today.month, today.day);
-    if (isNew && v.isBefore(startOfToday)) return 'Due date cannot be in the past.';
+    if (isNew && v.isBefore(DateTime.now())) {
+      return 'Due date cannot be in the past.';
+    }
     return null;
+  }
+
+  static String? duplicateTitle(String title, int? assigneeId, List<Task> tasks,
+      {int? editingId}) {
+    final t = title.trim().toLowerCase();
+    final clash = tasks.any((x) =>
+        x.id != editingId &&
+        x.assigneeId == assigneeId &&
+        x.title.toLowerCase() == t);
+    return clash ? 'This person already has a task with that title.' : null;
   }
 }
