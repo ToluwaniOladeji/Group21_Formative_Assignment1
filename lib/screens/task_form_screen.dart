@@ -5,6 +5,7 @@ import '../services/database_service.dart';
 import '../utils/formatters.dart';
 import '../utils/theme.dart';
 import '../utils/validators.dart';
+import '../services/prefs_service.dart';
 
 const _gap = SizedBox(height: AppSpacing.md);
 
@@ -65,6 +66,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         if (!members.any((m) => m.id == _assigneeId)) _assigneeId = null;
       });
     } catch (_) {
+      if (!mounted) return;
       _snack('Could not load team members.');
     }
   }
@@ -100,8 +102,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     final desc = _desc.text.trim();
     try {
       final old = widget.task;
+      final me = PrefsService.currentUserId;
       if (old == null) {
-        await db.insertTask(Task(
+        final id = await db.insertTask(Task(
           title: title,
           description: desc,
           assigneeId: _assigneeId!,
@@ -110,6 +113,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           dueDate: _due!,
           createdAt: DateTime.now(),
         ));
+        if (me != null) {
+          await db.logActivity(me, 'created "$title"', taskId: id);
+        }
       } else {
         await db.updateTask(old.copyWith(
           title: title,
@@ -119,6 +125,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           status: _status,
           dueDate: _due,
         ));
+        if (me != null) {
+          await db.logActivity(me, 'updated "$title"', taskId: old.id);
+        }
       }
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -136,8 +145,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         title: const Text('Discard changes?'),
         content: const Text('Your edits will be lost.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep editing')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Discard')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep editing')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Discard')),
         ],
       ),
     );
@@ -164,7 +177,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 decoration: const InputDecoration(labelText: 'Title'),
                 validator: (v) =>
                     Validators.title(v) ??
-                    Validators.duplicateTitle(v ?? '', _assigneeId, _tasks, editingId: widget.task?.id),
+                    Validators.duplicateTitle(v ?? '', _assigneeId, _tasks,
+                        editingId: widget.task?.id),
               ),
               _gap,
               TextFormField(
@@ -177,7 +191,10 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               DropdownButtonFormField<int>(
                 initialValue: _assigneeId,
                 decoration: const InputDecoration(labelText: 'Assigned to'),
-                items: [for (final m in _members) DropdownMenuItem(value: m.id, child: Text(m.name))],
+                items: [
+                  for (final m in _members)
+                    DropdownMenuItem(value: m.id, child: Text(m.name))
+                ],
                 onChanged: (v) => setState(() => _assigneeId = v),
                 validator: (v) => Validators.required(v, 'a team member'),
               ),
@@ -206,14 +223,20 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               DropdownButtonFormField<Priority>(
                 initialValue: _priority,
                 decoration: const InputDecoration(labelText: 'Priority'),
-                items: [for (final p in Priority.values) DropdownMenuItem(value: p, child: Text(p.label))],
+                items: [
+                  for (final p in Priority.values)
+                    DropdownMenuItem(value: p, child: Text(p.label))
+                ],
                 onChanged: (v) => setState(() => _priority = v!),
               ),
               _gap,
               DropdownButtonFormField<TaskStatus>(
                 initialValue: _status,
                 decoration: const InputDecoration(labelText: 'Status'),
-                items: [for (final s in TaskStatus.values) DropdownMenuItem(value: s, child: Text(s.label))],
+                items: [
+                  for (final s in TaskStatus.values)
+                    DropdownMenuItem(value: s, child: Text(s.label))
+                ],
                 onChanged: (v) => setState(() => _status = v!),
               ),
               const SizedBox(height: AppSpacing.lg),
