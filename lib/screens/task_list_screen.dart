@@ -8,6 +8,7 @@ import '../utils/theme.dart';
 import '../widgets/task_card.dart';
 import 'task_details_screen.dart';
 import 'task_form_screen.dart';
+import '../services/prefs_service.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -21,6 +22,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Map<int, TeamMember> _members = {};
   String _query = '';
   SlaStatus? _filter;
+  bool _mineOnly = false;
 
   @override
   void initState() {
@@ -60,9 +62,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
     final list = _tasks.where((t) {
       final okSearch = t.title.toLowerCase().contains(q);
       final okFilter = _filter == null || SlaService.statusOf(t) == _filter;
-      return okSearch && okFilter;
+      final okMine = !_mineOnly || t.assigneeId == PrefsService.currentUserId;
+      return okSearch && okFilter && okMine;
     }).toList();
-    list.sort((a, b) => SlaService.urgencyScore(b).compareTo(SlaService.urgencyScore(a)));
+    list.sort((a, b) =>
+        SlaService.urgencyScore(b).compareTo(SlaService.urgencyScore(a)));
     return list;
   }
 
@@ -73,10 +77,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
         title: const Text('Delete task?'),
         content: Text('"${t.title}" will be removed.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep task')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep task')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete task', style: TextStyle(color: AppColors.overdue)),
+            child: const Text('Delete task',
+                style: TextStyle(color: AppColors.overdue)),
           ),
         ],
       ),
@@ -88,6 +95,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
     setState(() => _tasks.remove(t));
     try {
       await DatabaseService.instance.deleteTask(t.id!);
+      // Log the activity
+      final me = PrefsService.currentUserId;
+      if (me != null) {
+        await DatabaseService.instance.logActivity(me, 'deleted "${t.title}"');
+      }
     } catch (_) {
       if (!mounted) return;
       _snack('Could not delete the task.');
@@ -120,7 +132,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
         Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: TextField(
-            decoration: const InputDecoration(hintText: 'Search by title', prefixIcon: Icon(Icons.search)),
+            decoration: const InputDecoration(
+                hintText: 'Search by title', prefixIcon: Icon(Icons.search)),
             onChanged: (v) => setState(() => _query = v),
           ),
         ),
@@ -130,6 +143,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             children: [
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: FilterChip(
+                  label: const Text('My tasks'),
+                  selected: _mineOnly,
+                  onSelected: (v) => setState(() => _mineOnly = v),
+                ),
+              ),
               for (final s in <SlaStatus?>[null, ...SlaStatus.values])
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -146,29 +167,49 @@ class _TaskListScreenState extends State<TaskListScreen> {
           child: shown.isEmpty
               ? Center(
                   child: Text(
-                    _tasks.isEmpty ? 'No tasks yet. Add your first task.' : 'No tasks match your search or filter.',
+                    _tasks.isEmpty
+                        ? 'No tasks yet. Add your first task.'
+                        : 'No tasks match your search or filter.',
                     textAlign: TextAlign.center,
                   ),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 96),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md, AppSpacing.sm, AppSpacing.md, 96),
                   itemCount: shown.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (_, i) {
                     final t = shown[i];
                     return Dismissible(
                       key: ValueKey(t.id),
-                      direction: DismissDirection.endToStart,
-                      confirmDismiss: (_) => _confirmDelete(t),
+                      confirmDismiss: (dir) async {
+                        if (dir == DismissDirection.startToEnd) {
+                          _open(TaskFormScreen(task: t));
+                          return false;
+                        }
+                        return _confirmDelete(t);
+                      },
                       onDismissed: (_) => _delete(t),
                       background: Container(
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                        child: const Icon(Icons.edit_outlined,
+                            color: Colors.white),
+                      ),
+                      secondaryBackground: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: AppSpacing.lg),
                         decoration: BoxDecoration(
                           color: AppColors.overdue,
                           borderRadius: BorderRadius.circular(AppRadius.card),
                         ),
-                        child: const Icon(Icons.delete_outline, color: Colors.white),
+                        child: const Icon(Icons.delete_outline,
+                            color: Colors.white),
                       ),
                       child: TaskCard(
                         task: t,
