@@ -7,6 +7,7 @@ import '../services/sla_service.dart';
 import '../utils/theme.dart';
 import '../widgets/task_card.dart';
 import 'task_details_screen.dart';
+import '../services/prefs_service.dart';
 
 class AttentionScreen extends StatefulWidget {
   const AttentionScreen({super.key});
@@ -33,8 +34,11 @@ class _AttentionScreenState extends State<AttentionScreen> {
       final db = DatabaseService.instance;
       final all = await db.getTasks();
       final members = await db.getMembers();
-      final open = all.where((t) => SlaService.statusOf(t) != SlaStatus.completed).toList()
-        ..sort((a, b) => SlaService.urgencyScore(b).compareTo(SlaService.urgencyScore(a)));
+      final open = all
+          .where((t) => SlaService.statusOf(t) != SlaStatus.completed)
+          .toList()
+        ..sort((a, b) =>
+            SlaService.urgencyScore(b).compareTo(SlaService.urgencyScore(a)));
       if (!mounted) return;
       setState(() {
         _tasks = open;
@@ -48,7 +52,14 @@ class _AttentionScreenState extends State<AttentionScreen> {
 
   Future<void> _markDone(Task t) async {
     try {
-      await DatabaseService.instance.updateTask(t.copyWith(status: TaskStatus.done));
+      await DatabaseService.instance
+          .updateTask(t.copyWith(status: TaskStatus.done));
+      // Log the activity
+    final me = PrefsService.currentUserId;
+      if (me != null) {
+        await DatabaseService.instance
+            .logActivity(me, 'finished "${t.title}"', taskId: t.id);
+      }
       _load();
     } catch (_) {
       if (!mounted) return;
@@ -57,7 +68,8 @@ class _AttentionScreenState extends State<AttentionScreen> {
   }
 
   Future<void> _open(Task t) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => TaskDetailsScreen(task: t)));
+    await Navigator.push(
+        context, MaterialPageRoute(builder: (_) => TaskDetailsScreen(task: t)));
     _load();
   }
 
@@ -72,14 +84,18 @@ class _AttentionScreenState extends State<AttentionScreen> {
 
     final rows = <Widget>[];
     groups.forEach((title, status) {
-      final items = _tasks.where((t) => SlaService.statusOf(t) == status).toList();
+      final items =
+          _tasks.where((t) => SlaService.statusOf(t) == status).toList();
       if (items.isEmpty) return;
       rows.add(Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.sm),
-        child: Text('$title (${items.length})', style: text.titleMedium?.copyWith(color: status.color)),
+        padding:
+            const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.sm),
+        child: Text('$title (${items.length})',
+            style: text.titleMedium?.copyWith(color: status.color)),
       ));
       for (final t in items) {
-        rows.add(TaskCard(task: t, assignee: _members[t.assigneeId], onTap: () => _open(t)));
+        rows.add(TaskCard(
+            task: t, assignee: _members[t.assigneeId], onTap: () => _open(t)));
         rows.add(Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
@@ -97,7 +113,8 @@ class _AttentionScreenState extends State<AttentionScreen> {
       body: rows.isEmpty
           ? const Center(child: Text('Nothing needs you right now.'))
           : ListView(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, 96),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md, 0, AppSpacing.md, 96),
               children: rows,
             ),
     );
