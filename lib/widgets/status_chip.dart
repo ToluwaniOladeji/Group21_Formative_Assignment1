@@ -10,14 +10,15 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: status.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadius.chip),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(status.icon, size: 14, color: status.color),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
         Text(status.label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(color: status.color, fontWeight: FontWeight.w700)),
       ]),

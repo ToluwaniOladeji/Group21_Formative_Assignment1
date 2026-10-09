@@ -6,6 +6,7 @@ import '../utils/formatters.dart';
 import '../utils/theme.dart';
 import 'member_avatar.dart';
 import 'status_chip.dart';
+import '../models/sla_status.dart';
 
 /// Signature element of the app: a coloured "SLA edge" on the left of each task.
 class TaskCard extends StatelessWidget {
