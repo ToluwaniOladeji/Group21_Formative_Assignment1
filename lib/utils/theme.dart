@@ -20,6 +20,7 @@ class AppColors {
 
 class AppSpacing {
   static const double xs = 4, sm = 8, md = 16, lg = 24, xl = 32;
+  static const double listBottom = 96;
 }
 
 class AppRadius {
