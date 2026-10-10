@@ -12,6 +12,7 @@ import 'activity_screen.dart';
 import 'attention_screen.dart';
 import 'task_details_screen.dart';
 import 'workload_screen.dart';
+import '../widgets/dashboard_charts.dart';
 
 /// OWNER: Member D. Greeting, four SLA counters, status bar,
 /// upcoming deadlines, links to extra screens, pull to refresh.
@@ -109,7 +110,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (_tasks.isEmpty)
             _emptyState(context)
           else ...[
-            _distributionBar(context),
+            SlaDonutChart(tasks: _tasks),
+            const SizedBox(height: AppSpacing.sm),
+            PriorityBarChart(tasks: _tasks),
             const SizedBox(height: AppSpacing.lg),
             Text('Upcoming deadlines', style: text.titleLarge),
             const SizedBox(height: AppSpacing.sm),
@@ -138,32 +141,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _link(context, Icons.history, 'Activity log',
               'Everything that changed', const ActivityScreen()),
         ],
-      ),
-    );
-  }
-
-  // One bar split into coloured parts, one part per SLA status.
-  Widget _distributionBar(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Status distribution', style: text.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            child: SizedBox(
-              height: AppSpacing.sm,
-              child: Row(children: [
-                for (final s in SlaStatus.values)
-                  if (_count(s) > 0)
-                    Expanded(
-                        flex: _count(s), child: Container(color: s.color)),
-              ]),
-            ),
-          ),
-        ]),
       ),
     );
   }
