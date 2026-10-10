@@ -108,7 +108,6 @@ class _AttentionScreenState extends State<AttentionScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Attention queue')),
       body: rows.isEmpty
           ? const Center(child: Text('Nothing needs you right now.'))
