@@ -3,21 +3,21 @@ enum TaskStatus { todo, inProgress, blocked, done }
 
 extension TaskStatusX on TaskStatus {
   String get label => switch (this) {
-        TaskStatus.todo => 'To do',
-        TaskStatus.inProgress => 'In progress',
-        TaskStatus.blocked => 'Blocked',
-        TaskStatus.done => 'Done',
-      };
+    TaskStatus.todo => 'To do',
+    TaskStatus.inProgress => 'In progress',
+    TaskStatus.blocked => 'Blocked',
+    TaskStatus.done => 'Done',
+  };
 }
 
 enum Priority { low, medium, high }
 
 extension PriorityX on Priority {
   String get label => switch (this) {
-        Priority.low => 'Low',
-        Priority.medium => 'Medium',
-        Priority.high => 'High',
-      };
+    Priority.low => 'Low',
+    Priority.medium => 'Medium',
+    Priority.high => 'High',
+  };
 }
 
 class Task {
@@ -45,6 +45,8 @@ class Task {
     this.notes = '',
   });
 
+  bool get isDone => status == TaskStatus.done;
+
   Task copyWith({
     String? title,
     String? description,
@@ -70,28 +72,28 @@ class Task {
 
   // Column names match the SQLite table in database_service.dart
   Map<String, Object?> toMap() => {
-        if (id != null) 'id': id,
-        'title': title,
-        'description': description,
-        'category': category,
-        'assignee_id': assigneeId,
-        'priority': priority.index,
-        'status': status.index,
-        'due_date': dueDate.millisecondsSinceEpoch,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'notes': notes,
-      };
+    if (id != null) 'id': id,
+    'title': title,
+    'description': description,
+    'category': category,
+    'assignee_id': assigneeId,
+    'priority': priority.index,
+    'status': status.index,
+    'due_date': dueDate.millisecondsSinceEpoch,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'notes': notes,
+  };
 
   factory Task.fromMap(Map<String, Object?> m) => Task(
-        id: m['id'] as int,
-        title: m['title'] as String,
-        description: m['description'] as String,
-        category: m['category'] as String,
-        assigneeId: m['assignee_id'] as int,
-        priority: Priority.values[m['priority'] as int],
-        status: TaskStatus.values[m['status'] as int],
-        dueDate: DateTime.fromMillisecondsSinceEpoch(m['due_date'] as int),
-        createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
-        notes: m['notes'] as String,
-      );
+    id: m['id'] as int,
+    title: m['title'] as String,
+    description: m['description'] as String,
+    category: m['category'] as String,
+    assigneeId: m['assignee_id'] as int,
+    priority: Priority.values[m['priority'] as int],
+    status: TaskStatus.values[m['status'] as int],
+    dueDate: DateTime.fromMillisecondsSinceEpoch(m['due_date'] as int),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
+    notes: m['notes'] as String,
+  );
 }
