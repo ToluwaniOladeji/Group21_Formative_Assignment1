@@ -19,19 +19,27 @@ class TeamMember {
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
+  TeamMember copyWith({String? name, String? role, String? email, int? colorValue}) => TeamMember(
+    id: id,
+    name: name ?? this.name,
+    role: role ?? this.role,
+    email: email ?? this.email,
+    colorValue: colorValue ?? this.colorValue,
+  );
+
   Map<String, Object?> toMap() => {
-        if (id != null) 'id': id,
-        'name': name,
-        'role': role,
-        'email': email,
-        'color': colorValue,
-      };
+    if (id != null) 'id': id,
+    'name': name,
+    'role': role,
+    'email': email,
+    'color': colorValue,
+  };
 
   factory TeamMember.fromMap(Map<String, Object?> m) => TeamMember(
-        id: m['id'] as int,
-        name: m['name'] as String,
-        role: m['role'] as String,
-        email: m['email'] as String,
-        colorValue: m['color'] as int,
-      );
+    id: m['id'] as int,
+    name: m['name'] as String,
+    role: m['role'] as String,
+    email: m['email'] as String,
+    colorValue: m['color'] as int,
+  );
 }

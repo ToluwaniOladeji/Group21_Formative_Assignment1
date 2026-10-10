@@ -1,5 +1,3 @@
-import '../models/task.dart';
-
 /// All form validation lives here so it is easy to find and explain in the demo.
 /// Each returns null when valid, or an error message (Flutter's FormField convention).
 class Validators {
@@ -12,9 +10,7 @@ class Validators {
   }
 
   static String? description(String? v) {
-    if ((v?.trim().length ?? 0) > 300) {
-      return 'Description is limited to 300 characters.';
-    }
+    if ((v?.trim().length ?? 0) > 300) return 'Description is limited to 300 characters.';
     return null;
   }
 
@@ -28,31 +24,36 @@ class Validators {
   static String? email(String? v) {
     final s = v?.trim() ?? '';
     if (s.isEmpty) return 'Enter an email address.';
-    if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(s)) {
-      return 'Enter a valid email, like name@team.com.';
-    }
+    if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(s)) return 'Enter a valid email, like name@team.com.';
     return null;
   }
 
-  static String? required(Object? v, String what) =>
-      v == null ? 'Choose $what.' : null;
+  static String? required(Object? v, String what) => v == null ? 'Choose $what.' : null;
 
   /// New tasks cannot start with a deadline that has already passed.
   static String? dueDate(DateTime? v, {bool isNew = true}) {
     if (v == null) return 'Pick a due date.';
-    if (isNew && v.isBefore(DateTime.now())) {
-      return 'Due date cannot be in the past.';
-    }
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    if (isNew && v.isBefore(startOfToday)) return 'Due date cannot be in the past.';
     return null;
   }
 
-  static String? duplicateTitle(String title, int? assigneeId, List<Task> tasks,
-      {int? editingId}) {
-    final t = title.trim().toLowerCase();
-    final clash = tasks.any((x) =>
-        x.id != editingId &&
-        x.assigneeId == assigneeId &&
-        x.title.toLowerCase() == t);
-    return clash ? 'This person already has a task with that title.' : null;
+  // ---- SLA rule thresholds (SLA Rules screen) ----
+  static String? slaHours(String? v) {
+    final n = int.tryParse(v?.trim() ?? '');
+    if (n == null || n < 1 || n > 240) return 'Enter hours between 1 and 240.';
+    return null;
   }
+
+  /// The "not started" bonus may be 0 (turn it off).
+  static String? slaBonus(String? v) {
+    final n = int.tryParse(v?.trim() ?? '');
+    if (n == null || n < 0 || n > 240) return 'Enter hours between 0 and 240.';
+    return null;
+  }
+
+  /// Higher priority must get an equal or wider window than lower priority.
+  static String? slaOrder(int high, int medium, int low) =>
+      (high >= medium && medium >= low) ? null : 'Windows must satisfy High >= Medium >= Low.';
 }
