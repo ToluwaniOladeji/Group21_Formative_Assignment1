@@ -9,6 +9,8 @@ import '../widgets/member_form_sheet.dart';
 import '../widgets/state_message.dart';
 import 'member_tasks_screen.dart';
 
+enum _MemberAction { edit, delete }
+
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key});
 
@@ -132,7 +134,7 @@ class _TeamScreenState extends State<TeamScreen> {
         title: 'Could not load the team',
         message: 'Something went wrong while reading the member list.',
         actionLabel: 'Try again',
-        onAction: () {
+        onActionPressed: () {
           setState(() => _loading = true);
           _load();
         },
@@ -144,7 +146,7 @@ class _TeamScreenState extends State<TeamScreen> {
         title: 'No team members yet',
         message: 'Add your first team member.',
         actionLabel: 'Add member',
-        onAction: () => _addOrEdit(),
+        onActionPressed: () => _addOrEdit(),
       );
     }
     final text = Theme.of(context).textTheme;

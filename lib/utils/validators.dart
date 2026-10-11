@@ -1,3 +1,5 @@
+
+import '../models/task.dart';
 /// All form validation lives here so it is easy to find and explain in the demo.
 /// Each returns null when valid, or an error message (Flutter's FormField convention).
 class Validators {
@@ -56,4 +58,14 @@ class Validators {
   /// Higher priority must get an equal or wider window than lower priority.
   static String? slaOrder(int high, int medium, int low) =>
       (high >= medium && medium >= low) ? null : 'Windows must satisfy High >= Medium >= Low.';
+
+  static String? duplicateTitle(String title, int? assigneeId, List<Task> tasks, {int? editingId}) {
+    final wanted = title.trim().toLowerCase();
+    if (wanted.isEmpty) return null;
+    final clash = tasks.any((t) =>
+    t.id != editingId &&
+        t.title.trim().toLowerCase() == wanted &&
+        (assigneeId == null || t.assigneeId == assigneeId));
+    return clash ? 'This person already has a task with that title.' : null;
+  }
 }

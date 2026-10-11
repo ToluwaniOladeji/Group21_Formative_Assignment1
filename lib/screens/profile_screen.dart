@@ -6,6 +6,11 @@ import '../utils/theme.dart';
 import '../widgets/member_avatar.dart';
 import 'sign_in_screen.dart';
 import 'sla_rules_screen.dart';
+import '../models/task.dart';                 // TaskStatus
+import '../widgets/member_form_sheet.dart';   // showMemberFormSheet
+import '../widgets/state_message.dart';       // StateMessage
+import '../utils/snackbars.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -24,6 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _load();
   }
 
   Future<void> _load() async {
@@ -106,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: 'Could not load profile',
         message: 'Something went wrong while loading your profile.',
         actionLabel: 'Try again',
-        onAction: () {
+        onActionPressed: () {
           setState(() => _loading = true);
           _load();
         },

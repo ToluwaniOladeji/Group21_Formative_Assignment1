@@ -4,8 +4,6 @@ import '../utils/theme.dart';
 // The state message widget has been used to display messages to the user(mostly the success and error messages).
 // It is stateless because it doesn't need to manage any state, it will just show the message and be used in the stateful widget.
 class StateMessage extends StatelessWidget {
-
-  // The aim will be it show icon, heading, the explanation and the button(which is optional)
   final IconData icon;
   final String title;
   final String message;
@@ -20,6 +18,8 @@ class StateMessage extends StatelessWidget {
     this.actionLabel,
     this.onActionPressed,
   });
+
+  // ... your existing build method stays exactly as it is
 
   @override
   Widget build(BuildContext context) {

@@ -86,8 +86,10 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
-      AppSnack.show(context, 'Could not add a team member. Please try again.', error: true);
+      AppSnack.show(context, 'Could not add a team member. Please try again.',
+          error: true);
     }
+  }
 
   @override
   Widget build(BuildContext context) {

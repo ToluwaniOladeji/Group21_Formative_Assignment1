@@ -67,7 +67,7 @@ class _MemberTasksScreenState extends State<MemberTasksScreen> {
                   title: 'Could not load tasks',
                   message: 'Something went wrong while reading the task list.',
                   actionLabel: 'Try again',
-                  onAction: () {
+                  onActionPressed: () {
                     setState(() => _loading = true);
                     _load();
                   },

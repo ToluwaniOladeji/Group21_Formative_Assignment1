@@ -94,7 +94,7 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
                   title: 'Could not load workload',
                   message:'Something went wrong while reading team workload data.',
                   actionLabel: 'Try again',
-                  onAction: () {
+                  onActionPressed: () {
                     setState(() {
                       _loading = true;
                     });

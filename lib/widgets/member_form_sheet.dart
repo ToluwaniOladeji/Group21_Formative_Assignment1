@@ -18,7 +18,7 @@ const List<int> kMemberColors = [
   0xFF475569,
 ];
 
-// Sheet used to add a memmber or edit one, it is shared by the sign-in, team and profile screens, so the rules live in one place.
+// Sheet used to add a member or edit one, it is shared by the sign-in, team and profile screens, so the rules live in one place.
 // It will then save to the SQLite and returns the saved member with its id
 Future<TeamMember?> showMemberFormSheet(
   BuildContext context, {
@@ -42,7 +42,7 @@ class _MemberFormSheet extends StatefulWidget {
   const _MemberFormSheet({required this.member, required this.existing});
 
   @override
-  State<_MemberFormSheet> createState() => _MemberFormSheet();
+  State<_MemberFormSheet> createState() => _MemberFormSheetState();
 }
 
 class _MemberFormSheetState extends State<_MemberFormSheet> {
@@ -67,7 +67,7 @@ class _MemberFormSheetState extends State<_MemberFormSheet> {
   // Name and email reuse the shared validators.
 
   String? _roleValidator(String? v) {
-    final basic = v?.trim() ?? '';
+    final s = v?.trim() ?? '';
     if (s.isEmpty) return 'Enter a role, like a QA Tester';
     if (s.length > 40) return 'Keep the role under 40 characters.';
     return null;
@@ -184,7 +184,7 @@ class _MemberFormSheetState extends State<_MemberFormSheet> {
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) => _save(),
               decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline)),
-              validator: _emailValidator,
+              validator: Validators.email,
             ),
             const SizedBox(height: AppSpacing.md),
             Text('Avatar colour', style: text.titleMedium),
