@@ -3,11 +3,14 @@ import '../models/team_member.dart';
 import '../services/database_service.dart';
 import '../services/prefs_service.dart';
 import '../utils/theme.dart';
+import '../utils/snackbars.dart';
+import '../utils/validators.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/member_form_sheet.dart';
+import '../widgets/state_message.dart';
 import 'app_shell.dart';
 
-/// OWNER: Member B. Working baseline: pick who you are. No real auth needed.
-/// TODO(B): welcome illustration/brand block, "Add new member" option, error state if DB fails.
+// the chosen member id is saved in SharedPreferences and restored on the next launch.
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -16,66 +19,152 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  List<TeamMember> _members = [];
-  bool _loading = true;
+  final _formKey = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  bool _busy = false;
+  String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
+  void dispose() {
+    _email.dispose();
+    super.dispose();
   }
-
-  Future<void> _load() async {
-    final members = await DatabaseService.instance.getMembers();
-    if (!mounted) return;
-    setState(() {
-      _members = members;
-      _loading = false;
-    });
-  }
-
-  Future<void> _signIn(TeamMember m) async {
-    await PrefsService.setCurrentUser(m.id!);
-    if (!mounted) return;
+  void _goToApp() {
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AppShell()));
   }
+
+  Future<void> _signIn() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final members = await DatabaseService.instance.getMembers();
+      final entered = _email.text.trim().toLowerCase();
+      TeamMember? match;
+
+      for (final member in members) {
+        if (member.email.trim().toLowerCase() == entered) {
+          match = member;
+          break;
+        }
+      }
+      if (match == null) {
+        if (!mounted) return;
+        setState(() {
+          _busy = false;
+          _error = 'No member uses this email. Check the spelling, or join the team below.';
+        });
+        return;
+      }
+      await PrefsService.setCurrentUser(match.id!);
+      if (!mounted) return;
+      _goToApp();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Could not sign in. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _join() async {
+    setState(() => _busy = true);
+    try {
+      final members = await DatabaseService.instance.getMembers();
+      if (!mounted) return;
+      final saved = await showMemberFormSheet(context, existing: members);
+      if (saved == null) {
+        if (mounted) setState(() => _busy = false);
+        return;
+      }
+      await PrefsService.setCurrentUser(saved.id!);
+      if (!mounted) return;
+      _goToApp();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      AppSnack.show(context, 'Could not add a team member. Please try again.', error: true);
+    }
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const SizedBox(height: AppSpacing.xl),
-            Text('Beacon', style: text.headlineMedium),
-            const SizedBox(height: AppSpacing.sm),
-            Text('Know which tasks need you before they slip.', style: text.bodyMedium),
-            const SizedBox(height: AppSpacing.xl),
-            Text('Who is working today?', style: text.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.separated(
-                      itemCount: _members.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (_, i) {
-                        final m = _members[i];
-                        return Card(
-                          child: ListTile(
-                            leading: MemberAvatar(m),
-                            title: Text(m.name, style: text.titleMedium),
-                            subtitle: Text(m.role),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => _signIn(m),
-                          ),
-                        );
-                      },
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Form(
+                key: _formKey,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  // Brand block
+                  Row(children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(AppRadius.input)),
+                      child: const Icon(Icons.sensors, color: Colors.white),
                     ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text('Beacon', style: text.headlineMedium),
+                  ]),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text('Know which tasks need you before they slip.', style: text.bodyMedium),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text('Welcome back', style: text.titleLarge),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text('Sign in with your team email.', style: text.bodySmall),
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) {
+                      if (!_busy) {_signIn();}
+                    },
+                    onChanged: (_) {
+                      if (_error != null) setState(() => _error = null);
+                    },
+                    decoration: const InputDecoration(labelText: 'Email', hintText: 'name@team.com', prefixIcon: Icon(Icons.mail_outline)),
+                    validator: Validators.email,
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(_error!, style: text.bodySmall?.copyWith(color: AppColors.overdue)),
+                  ],
+                  const SizedBox(height: AppSpacing.md),
+                  FilledButton(
+                    onPressed: _busy ? null : _signIn,
+                    child: _busy
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Sign in'),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text('New to Beacon?', style: text.bodySmall),
+                    ),
+                    const Expanded(child: Divider()),
+                  ]),
+                  const SizedBox(height: AppSpacing.lg),
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : _join,
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Join the team'),
+                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                  ),
+                ]),
+              ),
             ),
-          ]),
+          ),
         ),
       ),
     );
